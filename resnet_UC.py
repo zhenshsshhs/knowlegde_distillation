@@ -13,7 +13,7 @@ from tqdm import tqdm
 parser = argparse.ArgumentParser(description='Train a ResNet34 model for UC Merced Land-Use dataset')
 parser.add_argument('--data_dir', type=str, default='/data1/zhengshuaijie/UCMerced_LandUse/Images', help='path to the dataset')
 parser.add_argument('--batch_size', type=int, default=32, help='batch size for training')
-parser.add_argument('--num_epochs', type=int, default=10, help='number of epochs')
+parser.add_argument('--num_epochs', type=int, default=200, help='number of epochs')
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
 parser.add_argument('--num_classes', type=int, default=21, help='number of classes')
 args = parser.parse_args()
@@ -87,7 +87,7 @@ for epoch in range(args.num_epochs):
 
     # 使用 tqdm 显示训练进度条
     with tqdm(train_loader, unit='batch') as t:
-        t.set_description(f'Epoch {epoch+1}')
+        t.set_description(f'Epoch [{epoch+1}/{args.num_epochs}]')
         model.train()  # 训练模式
         for i, (images, labels) in enumerate(t):
             images = images.to(device)
@@ -147,7 +147,7 @@ for epoch in range(args.num_epochs):
         best_weights = model.state_dict()
 
     # 保存最好的权重
-    if epoch % 10 == 0:
+    if int(epoch+1) % 10 == 0:
         torch.save(best_weights, "best_model.pth") 
 
     
