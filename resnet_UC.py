@@ -76,7 +76,9 @@ optimizer = optim.Adam(model.parameters(), lr=args.lr)
 # 初始化 Tensorboard
 writer = SummaryWriter()
 
+
 # 训练模型
+best_val_acc = 0.0  # 记录最好的验证准确率
 for epoch in range(args.num_epochs):
     train_loss = 0.0
     train_acc = 0.0
@@ -111,6 +113,9 @@ for epoch in range(args.num_epochs):
                 writer.add_scalar('train/loss', loss.item(), step)
                 writer.add_scalar('train/accuracy', train_acc.item()/len(train_loader.dataset), step)
 
+        # 保存模型权重
+        # torch.save(model.state_dict(), f"model_{epoch+1}.pth")
+
     model.eval()  # 评估模式
     with torch.no_grad():
         for images, labels in val_loader:
@@ -135,6 +140,17 @@ for epoch in range(args.num_epochs):
     # 记录验证损失和准确率到 Tensorboard
     writer.add_scalar('val/loss', val_loss, epoch)
     writer.add_scalar('val/accuracy', val_acc, epoch)
+
+    # 选择最好的权重
+    if val_acc > best_val_acc:
+        best_val_acc = val_acc
+        best_weights = model.state_dict()
+
+    # 保存最好的权重
+    if epoch % 10 == 0:
+        torch.save(best_weights, "best_model.pth") 
+
+    
 
 # 关闭 Tensorboard
 writer.close()
