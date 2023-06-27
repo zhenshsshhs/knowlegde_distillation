@@ -107,11 +107,9 @@ for epoch in range(args.num_epochs):
             # 更新进度条
             t.set_postfix(loss=loss.item(), acc=train_acc.item()/len(train_loader.dataset))
 
-            # 记录训练损失和准确率到 Tensorboard
-            if i % 10 == 0:
-                step = epoch * len(train_loader) + i
-                writer.add_scalar('train/loss', loss.item(), step)
-                writer.add_scalar('train/accuracy', train_acc.item()/len(train_loader.dataset), step)
+
+        writer.add_scalar('train/loss', loss.item(), epoch)
+        writer.add_scalar('train/accuracy', train_acc.item()/len(train_loader.dataset), epoch)
 
         # 保存模型权重
         # torch.save(model.state_dict(), f"model_{epoch+1}.pth")
@@ -146,9 +144,10 @@ for epoch in range(args.num_epochs):
         best_val_acc = val_acc
         best_weights = model.state_dict()
 
-    # 保存最好的权重
+    # 每十轮保存一次，保存最好的权重
     if int(epoch+1) % 10 == 0:
         torch.save(best_weights, "best_model.pth") 
+        print('保存模型参数')
 
     
 
