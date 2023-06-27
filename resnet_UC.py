@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter  # new import
 from tqdm import tqdm
 
 # 定义命令行参数
@@ -33,8 +34,6 @@ val_transforms = transforms.Compose([
 ])
 
 # 加载数据集
-# train_dataset = datasets.ImageFolder(root=args.data_dir+'/train', transform=train_transforms)
-# val_dataset = datasets.ImageFolder(root=args.data_dir+'/val', transform=val_transforms)
 train_dataset = datasets.ImageFolder(root=args.data_dir, transform=train_transforms)
 val_dataset = datasets.ImageFolder(root=args.data_dir, transform=val_transforms)
 # 定义批量大小和数据加载器
@@ -74,6 +73,9 @@ criterion = nn.CrossEntropyLoss()
 # 定义优化器
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
+# 初始化 Tensorboard
+writer = SummaryWriter()
+
 # 训练模型
 for epoch in range(args.num_epochs):
     train_loss = 0.0
@@ -85,7 +87,7 @@ for epoch in range(args.num_epochs):
     with tqdm(train_loader, unit='batch') as t:
         t.set_description(f'Epoch {epoch+1}')
         model.train()  # 训练模式
-        for images, labels in t:
+        for i, (images, labels) in enumerate(t):
             images = images.to(device)
             labels = labels.to(device)
 
@@ -102,6 +104,12 @@ for epoch in range(args.num_epochs):
 
             # 更新进度条
             t.set_postfix(loss=loss.item(), acc=train_acc.item()/len(train_loader.dataset))
+
+            # 记录训练损失和准确率到 Tensorboard
+            if i % 10 == 0:
+                step = epoch * len(train_loader) + i
+                writer.add_scalar('train/loss', loss.item(), step)
+                writer.add_scalar('train/accuracy', train_acc.item()/len(train_loader.dataset), step)
 
     model.eval()  # 评估模式
     with torch.no_grad():
@@ -123,3 +131,10 @@ for epoch in range(args.num_epochs):
 
     # 输出每个 epoch 的结果
     print(f'Epoch [{epoch+1}/{args.num_epochs}], Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}')
+
+    # 记录验证损失和准确率到 Tensorboard
+    writer.add_scalar('val/loss', val_loss, epoch)
+    writer.add_scalar('val/accuracy', val_acc, epoch)
+
+# 关闭 Tensorboard
+writer.close()
