@@ -1,4 +1,5 @@
 import argparse
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -11,7 +12,7 @@ from tqdm import tqdm
 
 # 定义命令行参数
 parser = argparse.ArgumentParser(description='Train a ResNet34 model for UC Merced Land-Use dataset')
-parser.add_argument('--data_dir', type=str, default='/data1/zhengshuaijie/UCMerced_LandUse/Images', help='path to the dataset')
+parser.add_argument('--data_dir', type=str, default='/data1/zhengshuaijie/UCMerced_LandUse', help='path to the dataset')
 parser.add_argument('--batch_size', type=int, default=32, help='batch size for training')
 parser.add_argument('--num_epochs', type=int, default=200, help='number of epochs')
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
@@ -34,40 +35,43 @@ val_transforms = transforms.Compose([
 ])
 
 # 加载数据集
-train_dataset = datasets.ImageFolder(root=args.data_dir, transform=train_transforms)
-val_dataset = datasets.ImageFolder(root=args.data_dir, transform=val_transforms)
+train_dataset = datasets.ImageFolder(root=os.path.join(args.data_dir,'train'), transform=train_transforms)
+val_dataset = datasets.ImageFolder(root=os.path.join(args.data_dir,'val'), transform=val_transforms)
 # 定义批量大小和数据加载器
 train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
-# 定义模型
-class ResNet34(nn.Module):
-    def __init__(self, num_classes=21):
-        super(ResNet34, self).__init__()
-        self.resnet = models.resnet34(pretrained=True)
-        num_ftrs = self.resnet.fc.in_features
-        self.resnet.fc = nn.Linear(num_ftrs, num_classes)
+# # 定义模型
+# class ResNet34(nn.Module):
+#     def __init__(self, num_classes=21):
+#         super(ResNet34, self).__init__()
+#         self.resnet = models.resnet34(pretrained=True)
+#         num_ftrs = self.resnet.fc.in_features
+#         self.resnet.fc = nn.Linear(num_ftrs, num_classes)
 
-    def forward(self, x):
-        x = self.resnet.conv1(x)
-        x = self.resnet.bn1(x)
-        x = self.resnet.relu(x)
-        x = self.resnet.maxpool(x)
+#     def forward(self, x):
+#         x = self.resnet.conv1(x)
+#         x = self.resnet.bn1(x)
+#         x = self.resnet.relu(x)
+#         x = self.resnet.maxpool(x)
 
-        x = self.resnet.layer1(x)
-        x = self.resnet.layer2(x)
-        x = self.resnet.layer3(x)
-        x = self.resnet.layer4(x)
+#         x = self.resnet.layer1(x)
+#         x = self.resnet.layer2(x)
+#         x = self.resnet.layer3(x)
+#         x = self.resnet.layer4(x)
 
-        x = self.resnet.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = self.resnet.fc(x)
+#         x = self.resnet.avgpool(x)
+#         x = x.view(x.size(0), -1)
+#         x = self.resnet.fc(x)
 
-        return x
+#         return x
 
 # 初始化模型和损失函数
-device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
-model = ResNet34(num_classes=args.num_classes).to(device)
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+# model = models.resnet34(num_classes=args.num_classes).to(device)
+model = models.resnet34()
+model.fc= nn.Linear(model.fc.in_features,args.num_classes)
+model = model.to(device)
 criterion = nn.CrossEntropyLoss()
 
 # 定义优化器
@@ -76,6 +80,7 @@ optimizer = optim.Adam(model.parameters(), lr=args.lr)
 # 初始化 Tensorboard
 writer = SummaryWriter()
 
+print(model)#调用模型然后计算模型体系
 
 # 训练模型
 best_val_acc = 0.0  # 记录最好的验证准确率
